@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizza Store Ledger</title>
+    <style>
+        :root {
+            --primary: #d32f2f; /* Pizza Red */
+            --bg: #f4f7f6;
+            --card: #ffffff;
+            --text: #333333;
+            --home-cash: #2e7d32; /* Green for Home Cash */
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+        }
+
+        /* Dashboard Grid */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .card h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .card .amount {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .highlight-card {
+            border: 2px solid var(--home-cash);
+        }
+        
+        .highlight-card .amount {
+            color: var(--home-cash);
+            font-size: 32px;
+        }
+
+        /* Form Styles */
+        .form-section {
+            background: var(--card);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        button {
+            width: 100%;
+            background-color: var(--primary);
+            color: white;
+            padding: 15px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #b71c1c;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Recent Log */
+        .log-section {
+            background: var(--card);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        #status-msg {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🍕 Store Ledger</h1>
+
+    <div class="dashboard">
+        <div class="card highlight-card">
+            <h3>Home Cash (Operating)</h3>
+            <div class="amount" id="dash-home">$0.00</div>
+        </div>
+        <div class="card">
+            <h3>Store Register</h3>
+            <div class="amount" id="dash-store">$0.00</div>
+        </div>
+        <div class="card">
+            <h3>Bank Balance</h3>
+            <div class="amount" id="dash-bank">$0.00</div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <form id="ledgerForm">
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="f_date" required>
+            </div>
+
+            <div class="form-group">
+                <label>Transaction Type</label>
+                <select id="f_type" onchange="toggleFields()" required>
+                    <option value="Credit">Credit (Money In)</option>
+                    <option value="Expense">Expense (Money Out)</option>
+                    <option value="Transfer">Transfer (Store to Home)</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="accountGroup">
+                <label>Account</label>
+                <select id="f_account" required>
+                    <option value="Store Register">Store Register</option>
+                    <option value="Home Cash">Home Cash</option>
+                    <option value="Bank">Bank</option>
+                </select>
+            </div>
+
+            <div class="form-group hidden" id="categoryGroup">
+                <label>Category</label>
+                <select id="f_category" onchange="toggleFields()">
+                    <option value="Food">Food & Ingredients</option>
+                    <option value="Store Maintenance">Store Maintenance / Bills</option>
+                    <option value="Employee">Employee Payment</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Amount ($)</label>
+                <input type="number" id="f_amount" step="0.01" min="0" required>
+            </div>
+
+            <div class="form-group">
+                <label>Description / Note</label>
+                <input type="text" id="f_desc" placeholder="e.g., Walk-in sales, bought cheese...">
+            </div>
+
+            <button type="submit" id="submitBtn">Submit Entry</button>
+            <div id="status-msg"></div>
+        </form>
+    </div>
+
+    <div class="log-section">
+        <h3>Recent Entries (This Session)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Account</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody id="logTableBody">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // ⚠️ PASTE YOUR GOOGLE APPS SCRIPT URL BELOW
+    // ==========================================
+    const API_URL = "https://script.google.com/macros/s/AKfycbyF-wdcsNaa5VYaNBZ-dD8oWivsAYUeXLZTWSjrq70wuVZE97iz9tu47Na39zEgwtb3/exec";
+
+    // Set today's date automatically
+    document.getElementById('f_date').valueAsDate = new Date();
+
+    // Fetch live dashboard numbers on load
+    async function loadDashboard() {
+        try {
+            const response = await fetch(API_URL);
+            const data = await response.json();
+            
+            document.getElementById('dash-home').innerText = `$${data.home.toFixed(2)}`;
+            document.getElementById('dash-store').innerText = `$${data.store.toFixed(2)}`;
+            document.getElementById('dash-bank').innerText = `$${data.bank.toFixed(2)}`;
+        } catch (error) {
+            console.error("Error loading dashboard:", error);
+        }
+    }
+
+    // Dynamic Form UI Logic
+    function toggleFields() {
+        const type = document.getElementById('f_type').value;
+        const categoryGroup = document.getElementById('categoryGroup');
+        const accountGroup = document.getElementById('accountGroup');
+        const accountSelect = document.getElementById('f_account');
+
+        // Reset display
+        categoryGroup.classList.add('hidden');
+        accountGroup.classList.remove('hidden');
+
+        if (type === 'Expense') {
+            categoryGroup.classList.remove('hidden');
+        } else if (type === 'Transfer') {
+            // Force account to Store Register for End-of-Day transfer based on your backend logic
+            accountSelect.value = "Store Register";
+            accountGroup.classList.add('hidden'); // Hide it so you can't change it by mistake
+            document.getElementById('f_desc').value = "End of day cash transfer to Home";
+        }
+    }
+
+    // Submit Data
+    document.getElementById('ledgerForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const submitBtn = document.getElementById('submitBtn');
+        const statusMsg = document.getElementById('status-msg');
+        
+        // Build JSON Payload
+        const payload = {
+            date: document.getElementById('f_date').value,
+            type: document.getElementById('f_type').value,
+            account: document.getElementById('f_account').value,
+            category: document.getElementById('f_type').value === 'Expense' ? document.getElementById('f_category').value : "",
+            amount: parseFloat(document.getElementById('f_amount').value),
+            description: document.getElementById('f_desc').value
+        };
+
+        // UI Loading State
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Sending to Google Sheets...";
+        statusMsg.innerText = "";
+        statusMsg.style.color = "black";
+
+        try {
+            const response = await fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+            
+            const result = await response.json();
+            
+            if(result.status === "success") {
+                statusMsg.innerText = "✅ Entry Saved!";
+                statusMsg.style.color = "green";
+                
+                // Add to local visual log
+                const tbody = document.getElementById('logTableBody');
+                tbody.innerHTML = `<tr><td>${payload.type}</td><td>${payload.account}</td><td>$${payload.amount}</td></tr>` + tbody.innerHTML;
+
+                // Reset form (keep date)
+                document.getElementById('f_amount').value = "";
+                document.getElementById('f_desc').value = "";
+                
+                // Refresh dashboard numbers
+                loadDashboard();
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (error) {
+            statusMsg.innerText = "❌ Error: " + error.message;
+            statusMsg.style.color = "red";
+        }
+
+        // Restore button
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Submit Entry";
+    });
+
+    // Run this when page loads
+    loadDashboard();
+</script>
+
+</body>
+</html>
